@@ -168,14 +168,98 @@ def check_price(ticker, cited_price):
     }
 
 
+MENU = """
+📊 PRICE DESK — Market Data Officer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+What do you want to check?
+
+1. 💲 Single / batch quote
+     .price NVDA
+     .price NVDA AMD MU TSLA        (batch — any number)
+
+2. ✅ Verify a cited price
+     .price --check NVDA 189.31     (is it within 2% of live?)
+
+3. 👀 Pull the watchlist
+     .price watchlist               (reads waypoint-capital/watchlist.md)
+
+4. 🧪 Stress-test the data layer
+     .price stress-test             (10-ticker validation suite)
+
+5. 📜 Show recent pulls
+     .price log                     (last 10 from price-log.jsonl)
+
+6. ❓ This menu
+     .price                         (no args = you see this)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Source: yfinance (Yahoo)    Delay: ~15 min on free tier
+Logged: data/price-log.jsonl every pull
+"""
+
+
+def read_watchlist():
+    """Read tickers from waypoint-capital/watchlist.md markdown table."""
+    watchlist_path = Path.home() / "Desktop/CLAUDE CODE/waypoint-capital/watchlist.md"
+    if not watchlist_path.exists():
+        return None, f"No watchlist found at {watchlist_path}"
+
+    tickers = []
+    try:
+        with watchlist_path.open() as f:
+            in_table = False
+            for line in f:
+                line = line.strip()
+                # Detect the ticker table by finding a row that starts with "| "
+                # followed by an UPPERCASE word (the ticker)
+                if line.startswith("| TSLA") or line.startswith("| NVDA") or (
+                    line.startswith("|") and "|---|" not in line and "Ticker" not in line
+                ):
+                    parts = [p.strip() for p in line.split("|")]
+                    # First non-empty cell is the ticker
+                    for p in parts:
+                        if p and p.isupper() and 1 <= len(p) <= 6 and p.isalpha():
+                            if p not in tickers:
+                                tickers.append(p)
+                            break
+    except Exception as e:
+        return None, f"Could not parse watchlist: {e}"
+
+    if not tickers:
+        return None, f"No tickers found in {watchlist_path}"
+    return tickers, None
+
+
+def show_recent_log(n=10):
+    """Display last N lines from price-log.jsonl."""
+    if not LOG_FILE.exists():
+        print("No price log yet. Make a price call first.")
+        return
+    lines = LOG_FILE.read_text().strip().split("\n")
+    recent = lines[-n:] if len(lines) > n else lines
+    print(f"📜 Last {len(recent)} price pulls:\n")
+    for line in recent:
+        try:
+            r = json.loads(line)
+            ts = r.get("pulled_at", "—")[:19]
+            ticker = r.get("ticker", "—")
+            status = r.get("status", "?")
+            price = r.get("price", "—")
+            print(f"  {ts}  {ticker:>6}  {status:>6}  ${price}")
+        except Exception:
+            continue
+
+
 def main():
     args = sys.argv[1:]
-    if not args:
-        print("Usage:")
-        print("  price.py TICKER [TICKER2 ...]")
-        print("  price.py --check TICKER PRICE")
-        sys.exit(1)
 
+    # No args → show menu
+    if not args:
+        print(MENU)
+        sys.exit(0)
+
+    # --check TICKER PRICE
     if args[0] == "--check":
         if len(args) != 3:
             print("Usage: price.py --check TICKER PRICE")
@@ -190,7 +274,39 @@ def main():
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["verdict"] == "OK" else 1)
 
-    # Regular ticker pull mode
+    # watchlist
+    if args[0] == "watchlist":
+        tickers, err = read_watchlist()
+        if err:
+            print(f"❌ {err}")
+            sys.exit(1)
+        print(f"👀 Pulling {len(tickers)} watchlist tickers: {' '.join(tickers)}\n")
+        results = [get_price(t) for t in tickers]
+        print(json.dumps(results, indent=2))
+        any_error = any(r["status"] != "OK" for r in results)
+        sys.exit(1 if any_error else 0)
+
+    # log
+    if args[0] == "log":
+        n = 10
+        if len(args) > 1:
+            try:
+                n = int(args[1])
+            except ValueError:
+                pass
+        show_recent_log(n)
+        sys.exit(0)
+
+    # stress-test
+    if args[0] == "stress-test":
+        import subprocess
+
+        result = subprocess.run(
+            ["python3", str(Path(__file__).parent / "stress_test.py")]
+        )
+        sys.exit(result.returncode)
+
+    # Default: treat each arg as a ticker
     results = []
     any_error = False
     for ticker in args:

@@ -1,6 +1,6 @@
 ---
 name: price-desk
-version: 0.1.1
+version: 0.1.2
 role: Market Data Officer
 description: >
   The live-price single source of truth for Waypoint Capital. Wraps yfinance
@@ -8,7 +8,7 @@ description: >
   call before anchoring analysis on a number. Prevents the stale-web-data bug
   that invalidated rumbles pre-v0.1. Single rule: no trade decision without a
   live price check.
-  Commands: .price TICKER | .price-check TICKER $X | .price stress-test
+  Commands: .price | .price TICKER | .price watchlist | .price --check TICKER $X | .price log | .price stress-test
 ---
 
 <!-- CHANGELOG pointer: see CHANGELOG.md. Bump `version:` on every material change. -->
@@ -167,21 +167,32 @@ Open `price-log.jsonl` — it's all there, timestamped.
 
 ---
 
-## IF NO COMMAND GIVEN
+## IF NO COMMAND GIVEN — MENU (v0.1.2+)
+
+When user types `.price` with no arguments, the script auto-displays the menu. Do NOT repeat the menu here in chat; just run:
+
+```bash
+python3 ~/.claude/skills/price-desk/scripts/price.py
+```
+
+The menu shows 6 options:
 
 ```
-📊 PRICE DESK — The Market Data Officer
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Live price source: yfinance (Yahoo Finance)
-Logs: data/price-log.jsonl
-
-COMMANDS:
-  .price TICKER                → pull live quote
-  .price-check TICKER $X       → verify cited price within 2% of live
-  .price stress-test           → run 10-ticker validation suite
-
-REQUIRED BEFORE ANY TRADE:
-  .price-check ran within 15 min before execution.
-  No exceptions.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 PRICE DESK — Market Data Officer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 💲 Single / batch quote       .price NVDA [AMD MU ...]
+2. ✅ Verify a cited price       .price --check NVDA 189.31
+3. 👀 Pull the watchlist         .price watchlist
+4. 🧪 Stress-test the data       .price stress-test
+5. 📜 Show recent pulls          .price log [N]
+6. ❓ This menu                   .price
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+### `.price watchlist` — reads waypoint-capital/watchlist.md
+
+Parses the ticker table in `waypoint-capital/watchlist.md`, extracts every ticker symbol, calls `get_price()` on each in sequence. Useful for one-shot refresh of the whole candidate pool.
+
+### `.price log [N]` — audit trail
+
+Shows last N (default 10) entries from `data/price-log.jsonl`. Timestamp, ticker, status, price. Human-readable. Useful for "did I check NOW today?"
