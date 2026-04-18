@@ -65,6 +65,17 @@ def get_price(ticker):
             current = previous_close = day_high = day_low = None
             currency = "USD"
 
+        # Pull extended-hours prices (post-market + pre-market) via .info
+        # This is slower (~1-2s) but gives us the full picture.
+        post_market = None
+        pre_market = None
+        try:
+            info = tkr.info or {}
+            post_market = info.get("postMarketPrice")
+            pre_market = info.get("preMarketPrice")
+        except Exception:
+            pass  # extended-hours data is best-effort
+
         # Fallback to history if fast_info incomplete
         if current is None:
             hist = tkr.history(period="2d")
@@ -99,6 +110,8 @@ def get_price(ticker):
             "change_pct": change_pct,
             "day_high": round(day_high, 2) if day_high else None,
             "day_low": round(day_low, 2) if day_low else None,
+            "post_market_price": round(post_market, 2) if post_market else None,
+            "pre_market_price": round(pre_market, 2) if pre_market else None,
             "currency": currency,
             "source": "yfinance",
             "pulled_at": pulled_at,

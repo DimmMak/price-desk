@@ -1,6 +1,6 @@
 ---
 name: price-desk
-version: 0.1.0
+version: 0.1.1
 role: Market Data Officer
 description: >
   The live-price single source of truth for Waypoint Capital. Wraps yfinance
