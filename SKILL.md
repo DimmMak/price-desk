@@ -1,7 +1,7 @@
 ---
 name: price-desk
 domain: fund
-version: 0.1.2
+version: 0.2.0
 role: Market Data Officer
 description: >
   The live-price single source of truth for Blue Hill Capital. Wraps yfinance

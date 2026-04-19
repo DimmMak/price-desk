@@ -1,35 +1,28 @@
 #!/usr/bin/env bash
-# price-desk — install/sync script
+# price-desk — install script (standard fleet template, S3-compliant)
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-INSTALL_DIR="$HOME/.claude/skills/price-desk"
+SRC="$(cd "$(dirname "$0")/.." && pwd)"
+DEST="$HOME/.claude/skills/price-desk"
 STALE_ZIP="$HOME/.claude/skills/price-desk.skill"
 
 echo "📦 price-desk install/sync"
-echo "   source: $REPO_DIR"
-echo "   target: $INSTALL_DIR"
+echo "   source: $SRC"
+echo "   target: $DEST"
 
-# Verify yfinance installed
-if ! python3 -c "import yfinance" 2>/dev/null; then
-  echo "📦 Installing yfinance..."
-  pip3 install yfinance || {
-    echo "❌ yfinance install failed. Try: pip3 install --user yfinance"
+# ─── Auto-validate SKILL.md against fleet schema v0.3 ───
+VALIDATOR="$HOME/.claude/skills/future-proof/scripts/validate-skill.py"
+if [ -f "$VALIDATOR" ]; then
+  python3 "$VALIDATOR" --schema-version 0.3 "$SRC/SKILL.md" || {
+    echo "❌ SKILL.md failed schema v0.3 validation — install aborted"
     exit 1
   }
 fi
+# ───────────────────────────────────────────────────────────
 
 [ -f "$STALE_ZIP" ] && { echo "🗑️  removing stale $STALE_ZIP"; rm "$STALE_ZIP"; }
+{ [ -L "$DEST" ] || [ -e "$DEST" ]; } && rm -rf "$DEST"
 
-if [ "${1:-}" = "--clean" ]; then
-  echo "🧹 clean install"
-  rm -rf "$INSTALL_DIR"
-fi
-
-mkdir -p "$INSTALL_DIR"
-cp "$REPO_DIR/SKILL.md" "$INSTALL_DIR/"
-cp -R "$REPO_DIR/scripts" "$INSTALL_DIR/"
-[ -d "$REPO_DIR/data" ] && cp -R "$REPO_DIR/data" "$INSTALL_DIR/"
-
-VERSION=$(grep -m1 "^version:" "$INSTALL_DIR/SKILL.md" | awk '{print $2}')
-echo "✅ installed price-desk v$VERSION — restart Claude Code to reload"
+ln -s "$SRC" "$DEST"
+VERSION=$(grep -m1 "^version:" "$SRC/SKILL.md" | awk '{print $2}')
+echo "✅ price-desk v$VERSION installed as symlink → $SRC"
