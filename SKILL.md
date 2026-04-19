@@ -23,6 +23,17 @@ capabilities:
     - "write outside own data folder"
     - "modify other skills"
     - "return stale cached data without timestamp"
+unix_contract:
+  data_format: "jsonl"
+  schema_version: "0.1.2"
+  stdin_support: false
+  stdout_format: "json"
+  composable_with:
+    - "fundamentals-desk"
+    - "technicals-desk"
+    - "royal-rumble"
+    - "tier"
+    - "accuracy-tracker"
 ---
 
 <!-- CHANGELOG pointer: see CHANGELOG.md. Bump `version:` on every material change. -->
