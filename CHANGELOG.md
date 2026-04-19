@@ -6,7 +6,7 @@
 
 ### Shipped
 - **Menu on bare invocation** — `.price` with no args displays 6-option menu
-- **`.price watchlist`** — reads `waypoint-capital/watchlist.md`, pulls prices for every ticker in the table
+- **`.price watchlist`** — reads `blue-hill-capital/watchlist.md`, pulls prices for every ticker in the table
 - **`.price log [N]`** — displays last N entries from `price-log.jsonl` (human-readable)
 - **`.price stress-test`** — now works via price.py passthrough (was previously only via stress_test.py)
 
@@ -64,7 +64,7 @@ NOW verification:   $96.66 (exact match to Yahoo Finance UI screenshot)
 - International ADRs occasionally flaky
 - Rate-limited at hundreds of calls/minute
 
-For Waypoint's 12-month horizon, these limits are irrelevant.
+For Blue Hill's 12-month horizon, these limits are irrelevant.
 
 ### Retroactive impact
 

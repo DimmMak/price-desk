@@ -182,7 +182,7 @@ What do you want to check?
      .price --check NVDA 189.31     (is it within 2% of live?)
 
 3. 👀 Pull the watchlist
-     .price watchlist               (reads waypoint-capital/watchlist.md)
+     .price watchlist               (reads blue-hill-capital/watchlist.md)
 
 4. 🧪 Stress-test the data layer
      .price stress-test             (10-ticker validation suite)
@@ -200,8 +200,8 @@ Logged: data/price-log.jsonl every pull
 
 
 def read_watchlist():
-    """Read tickers from waypoint-capital/watchlist.md markdown table."""
-    watchlist_path = Path.home() / "Desktop/CLAUDE CODE/waypoint-capital/watchlist.md"
+    """Read tickers from blue-hill-capital/watchlist.md markdown table."""
+    watchlist_path = Path.home() / "Desktop/CLAUDE CODE/blue-hill-capital/watchlist.md"
     if not watchlist_path.exists():
         return None, f"No watchlist found at {watchlist_path}"
 

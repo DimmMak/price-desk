@@ -1,6 +1,6 @@
 # 📊 Price Desk
 
-> The Market Data Officer for Waypoint Capital.
+> The Market Data Officer for Blue Hill Capital.
 > Live-price single source of truth. Prevents the stale-data bug.
 
 ---
@@ -52,7 +52,7 @@ Via skill invocation:
 ❌ Options market-making                   ← not our use case
 ```
 
-At Waypoint's horizon (12-month track record), 15-min delay is irrelevant.
+At Blue Hill's horizon (12-month track record), 15-min delay is irrelevant.
 
 ---
 
