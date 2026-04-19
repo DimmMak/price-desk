@@ -10,6 +10,19 @@ description: >
   that invalidated rumbles pre-v0.1. Single rule: no trade decision without a
   live price check.
   Commands: .price | .price TICKER | .price watchlist | .price --check TICKER $X | .price log | .price stress-test
+  NOT for: fundamentals (use fundamentals-desk).
+  NOT for: technicals (use technicals-desk).
+  NOT for: final trade decisions (use .rumble or .tier).
+capabilities:
+  reads:
+    - "yfinance API (network)"
+  writes:
+    - "price-desk/data/price-log.jsonl"
+  calls: []
+  cannot:
+    - "write outside own data folder"
+    - "modify other skills"
+    - "return stale cached data without timestamp"
 ---
 
 <!-- CHANGELOG pointer: see CHANGELOG.md. Bump `version:` on every material change. -->
