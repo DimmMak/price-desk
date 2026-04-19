@@ -1,5 +1,6 @@
 ---
 name: price-desk
+domain: fund
 version: 0.1.2
 role: Market Data Officer
 description: >
