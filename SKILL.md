@@ -1,7 +1,7 @@
 ---
 name: price-desk
 domain: fund
-version: 0.2.0
+version: 0.3.0
 role: Market Data Officer
 description: >
   The live-price single source of truth for Blue Hill Capital. Wraps yfinance
@@ -25,7 +25,7 @@ capabilities:
     - "return stale cached data without timestamp"
 unix_contract:
   data_format: "jsonl"
-  schema_version: "0.1.2"
+  schema_version: "0.2.0"
   stdin_support: false
   stdout_format: "json"
   composable_with:
@@ -63,6 +63,9 @@ Pull live price(s). Returns JSON with:
 - `previous_close` — prior day's close
 - `change_pct` — move today
 - `day_high` / `day_low` — intraday range
+- `post_market_price` / `pre_market_price` — aftermarket quotes (null if not in session)
+- `session_state` — `pre_market` / `regular` / `post_market` / `closed` (US Eastern clock)
+- `data_quality` — per-field reason string for any null aftermarket field (kills silent-null bug from v0.2.0)
 - `pulled_at` — ISO timestamp
 - `status` — OK or ERROR
 

@@ -1,5 +1,27 @@
 # CHANGELOG — Price Desk
 
+## v0.3.0 — 2026-04-23 — Session state + data quality (kill silent-null bug)
+
+**Trigger:** user flagged P1 🔴 Critical — `post_market_price: null` with zero reason. Downstream caller couldn't distinguish "no aftermarket session" from "info() returned null." Silent lag.
+
+### Shipped
+- `session_state` field — one of `pre_market` / `regular` / `post_market` / `closed`, based on US Eastern clock
+- `data_quality` block — per-field reason string for every null aftermarket price; null now carries actionable `"missing: not in X session (current: Y)"` instead of bare null
+- `get_session_state()` helper with zoneinfo (3.9+) → pytz fallback (3.8)
+- `_quality_for()` helper — single source of truth for null-reason strings
+
+### Schema
+- `schema_version` 0.1.2 → 0.2.0 (additive, backward-compat — old log entries lack new fields)
+- Skill `version` 0.2.0 → 0.3.0
+
+### Verified (2026-04-23 21:35 UTC)
+NVDA pull returned `session_state: "post_market"`, `post_market_price: 198.95` (real value), `pre_market_price: null` with reason `"missing: not in pre_market session (current: post_market)"`. Bug fixed.
+
+### Why this ships P1 of Data-Integrity Foundation
+Future-proof substrate: downstream skills (royal-rumble, accuracy-tracker, journalist) can now branch on `session_state` + trust `data_quality`. No more silent disagreement with the Yahoo UI.
+
+---
+
 ## v0.2.0 — 2026-04-18
 
 **World-Class Overhaul shipped.** Part of the fleet-wide upgrade to tree+plugin+unix architecture.

@@ -18,6 +18,12 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+try:
+    from zoneinfo import ZoneInfo  # Python 3.9+ stdlib
+    ET = ZoneInfo("America/New_York")
+except ImportError:
+    import pytz
+    ET = pytz.timezone("America/New_York")
 
 try:
     import yfinance as yf
@@ -32,6 +38,32 @@ LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 STALE_MINUTES_MARKET_HOURS = 30  # during market hours, quote must be <30 min old
 STALE_MINUTES_CLOSED = 1440      # after hours, quote can be up to 24h old (previous close)
 CHECK_TOLERANCE_PCT = 2.0        # --check flag: live must be within 2% of cited
+
+def get_session_state(now=None):
+    """
+    Returns one of: pre_market | regular | post_market | closed.
+    Clock-only; US market holidays are best-effort (treated as regular if weekday).
+    """
+    now = (now or datetime.now(ET)).astimezone(ET)
+    if now.weekday() >= 5:
+        return "closed"
+    minutes = now.hour * 60 + now.minute
+    if 4 * 60 <= minutes < 9 * 60 + 30:
+        return "pre_market"
+    if 9 * 60 + 30 <= minutes < 16 * 60:
+        return "regular"
+    if 16 * 60 <= minutes < 20 * 60:
+        return "post_market"
+    return "closed"
+
+
+def _quality_for(field_value, expected_session, current_session):
+    """Reason string for any null aftermarket field — kills silent-null bug."""
+    if field_value is not None:
+        return "OK"
+    if current_session == expected_session:
+        return f"missing: session is {expected_session} but yfinance returned null (info() may have failed)"
+    return f"missing: not in {expected_session} session (current: {current_session})"
 
 
 def log_pull(record):
@@ -102,6 +134,10 @@ def get_price(ticker):
         if previous_close and previous_close > 0:
             change_pct = round(((current - previous_close) / previous_close) * 100, 2)
 
+        session_state = get_session_state()
+        post_market_val = round(post_market, 2) if post_market else None
+        pre_market_val = round(pre_market, 2) if pre_market else None
+
         record = {
             "ticker": ticker.upper(),
             "status": "OK",
@@ -110,8 +146,13 @@ def get_price(ticker):
             "change_pct": change_pct,
             "day_high": round(day_high, 2) if day_high else None,
             "day_low": round(day_low, 2) if day_low else None,
-            "post_market_price": round(post_market, 2) if post_market else None,
-            "pre_market_price": round(pre_market, 2) if pre_market else None,
+            "post_market_price": post_market_val,
+            "pre_market_price": pre_market_val,
+            "session_state": session_state,
+            "data_quality": {
+                "post_market_price": _quality_for(post_market_val, "post_market", session_state),
+                "pre_market_price": _quality_for(pre_market_val, "pre_market", session_state),
+            },
             "currency": currency,
             "source": "yfinance",
             "pulled_at": pulled_at,
