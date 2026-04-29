@@ -292,6 +292,77 @@ def show_recent_log(n=10):
             continue
 
 
+def get_history(ticker, period="1y", interval="1d", adjust_aftermarket=True):
+    """
+    Pull historical OHLCV for a ticker via yfinance.
+
+    Args:
+      ticker: e.g. "TSLA"
+      period: yfinance period string — "1d", "5d", "1mo", "3mo", "6mo",
+              "1y", "2y", "5y", "10y", "ytd", "max"
+      interval: bar interval — "1m", "5m", "15m", "30m", "60m", "1h",
+                "1d", "5d", "1wk", "1mo", "3mo"
+      adjust_aftermarket: if True (default) AND interval=="1d" AND session is
+              post_market or closed, override the most-recent row's Close
+              with postMarketPrice from tkr.info. Also adds an
+              "AfterHoursAdjusted" boolean column (True only on adjusted rows).
+
+    Returns:
+      pandas.DataFrame with columns Open, High, Low, Close, Volume,
+      indexed by Date. Empty DataFrame on failure.
+
+    Use case:
+      Pipeline-build skills (dataflow-builder, royal-rumble historicals,
+      backtests) need OHLCV history. This is the ONLY history-pull entry
+      point in the fleet — composes via `from price import get_history`.
+    """
+    import pandas as pd
+    ticker = ticker.upper()
+    try:
+        t = yf.Ticker(ticker)
+        df = t.history(period=period, interval=interval, auto_adjust=False)
+
+        adjusted = False
+        adjustment_value = None
+        if adjust_aftermarket and len(df) > 0 and interval == "1d":
+            session = get_session_state()
+            if session in ("post_market", "closed"):
+                try:
+                    info = t.info or {}
+                    post_price = info.get("postMarketPrice")
+                    if post_price is not None:
+                        df["AfterHoursAdjusted"] = False
+                        df.loc[df.index[-1], "Close"] = float(post_price)
+                        df.loc[df.index[-1], "AfterHoursAdjusted"] = True
+                        adjusted = True
+                        adjustment_value = float(post_price)
+                except Exception:
+                    pass  # adjustment is best-effort, never break the pull
+
+        log_pull({
+            "pulled_at": datetime.now(timezone.utc).isoformat(),
+            "ticker": ticker,
+            "kind": "history",
+            "period": period,
+            "interval": interval,
+            "rows": len(df),
+            "aftermarket_adjusted": adjusted,
+            "aftermarket_close": adjustment_value,
+            "status": "OK" if len(df) > 0 else "EMPTY",
+        })
+        return df
+    except Exception as e:
+        log_pull({
+            "pulled_at": datetime.now(timezone.utc).isoformat(),
+            "ticker": ticker,
+            "kind": "history",
+            "period": period,
+            "status": "ERROR",
+            "error": str(e),
+        })
+        return pd.DataFrame()
+
+
 def main():
     args = sys.argv[1:]
 
