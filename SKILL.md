@@ -1,8 +1,9 @@
 ---
-name: price-desk
+name: trader
+aliases: [price-desk, price]
 domain: fund
-version: 0.3.0
-role: Market Data Officer
+version: 0.4.0
+role: Trader (Trading Desk)
 description: >
   The live-price single source of truth for Blue Hill Capital. Wraps yfinance
   (Yahoo Finance) into a price-verification layer that every other skill must
